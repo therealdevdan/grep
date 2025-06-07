@@ -18,6 +18,3 @@ fn main() {
         process::exit(1);
     }
 }
-
-// git config --global user.name "therealdevdan"
-// git config --global user.email "alexanderdanilchenko888@gmail.com"
