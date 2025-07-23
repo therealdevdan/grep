@@ -45,6 +45,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+//==== поиск с учётом регистра
 pub fn search<'a>(search_string: &str, contents: &'a str) -> Vec<&'a str> {
     let mut results: Vec<&str> = Vec::new();
     
@@ -55,7 +56,7 @@ pub fn search<'a>(search_string: &str, contents: &'a str) -> Vec<&'a str> {
     }
     results
 }
-
+//==== поиск без учёта регистра
 pub fn search_case_insensitive<'a>(
     search_string: &str,
     contents: &'a str,
