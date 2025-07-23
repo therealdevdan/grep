@@ -23,7 +23,7 @@ impl BuildingConfig for Config<'_> {
             return Err("Not enough args");
         }
         
-        let ignore_case = env::var("IGNORE_CASE").is_ok();
+        let ignore_case = env::var("IGNORE_CASE").is_ok(); // перемена среды. Определяющая, какой поиск использовать
 
         Ok(Config { 
             search_string: &args[1], 
