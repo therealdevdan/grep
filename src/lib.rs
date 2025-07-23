@@ -13,8 +13,12 @@ pub struct Config<'a> {
 // — программа попытается прочитать уже несуществующие данные (undefined behavior, 
 // Rust этого не допустит на этапе компиляции).
 
-impl Config<'_> {
-    pub fn build(args: &[String]) -> Result<Config, &'static str> {
+pub trait BuildingConfig {
+    fn build(args: &[String]) -> Result<Config, &'static str>;
+}
+
+impl BuildingConfig for Config<'_> {
+    fn build(args: &[String]) -> Result<Config, &'static str> {
         if args.len() < 3 {
             return Err("Not enough args");
         }
