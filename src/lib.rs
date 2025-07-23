@@ -1,49 +1,43 @@
-use std::env; // работа с переменной средой
-use std::fs; // работа с файлами
-use std::error::Error; // обработка ошибок
+use std::error::Error;
+use std::fs;
+use std::env;
 
-pub struct Config {
-    pub query: String,
-    pub file_path: String,
+pub struct Config<'a> {
+    pub search_string: &'a str, // заимствует строку. Данные, на которые ссылается Config, должны 
+    pub file_path: &'a str,     // жить не меньше, чем сам Config (это гарантирует время жизни 'a).
     pub ignore_case: bool,
 }
+// # ОСТОРОЖНО!
+//
+// Если args уничтожатся (например, выйдут из области видимости), а Config останется 
+// — программа попытается прочитать уже несуществующие данные (undefined behavior, 
+// Rust этого не допустит на этапе компиляции).
 
-impl Config {
-    pub fn build(
-        mut args: impl Iterator<Item = String>,
-    ) -> Result<Config, &'static str> {
-        args.next();
+impl Config<'_> {
+    pub fn build(args: &[String]) -> Result<Config, &'static str> {
+        if args.len() < 3 {
+            return Err("Not enough args");
+        }
+        
+        let ignore_case = env::var("IGNORE_CASE").is_ok();
 
-        let query: String = match args.next() {
-            Some(arg) => arg,
-            None => return Err("Didn't get a query string"),
-        };   
-
-        let file_path = match args.next() {
-            Some(arg) => arg,
-            None => return Err("Didn't get a file path"),
-        };
-
-        let ignore_case: bool = env::var("IGNORE_CASE").is_ok();
-
-        Ok(Config {
-            query,
-            file_path,
-            ignore_case,
-         })
+        Ok(Config { 
+            search_string: &args[1], 
+            file_path: &args[2],
+            ignore_case
+        })
     }
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents: String = fs::read_to_string(config.file_path)?;
 
-    let results: Vec<&str> = if config.ignore_case {
-        search_case_insensitive(&config.query, &contents)
-    } else
-    {
-        search(&config.query, &contents)
+    let results = if config.ignore_case {
+        search_case_insensitive(&config.search_string, &contents)
+    } else {
+        search(&config.search_string, &contents)
     };
-    
+
     for line in results {
         println!("{line}");
     }
@@ -51,21 +45,63 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// ===== поиск с учётом регистра =====
-pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    contents
-        .lines()
-        .filter(|line: &&str| line.contains(query))
-        .collect()
+pub fn search<'a>(search_string: &str, contents: &'a str) -> Vec<&'a str> {
+    let mut results: Vec<&str> = Vec::new();
+    
+    for line in contents.lines() {
+        if line.contains(search_string) {
+            results.push(line);
+        }
+    }
+    results
 }
 
-// ===== поиск без учета регистра =====
 pub fn search_case_insensitive<'a>(
-    query: &str,
-    contents: &'a str
+    search_string: &str,
+    contents: &'a str,
 ) -> Vec<&'a str> {
-    contents
-        .lines()
-        .filter(|line: &&str| line.to_lowercase().contains(&query.to_lowercase()))
-        .collect()
+    let search_string = search_string.to_lowercase();
+    let mut resuls: Vec<&str> = Vec::new();
+
+    for line in contents.lines() {
+        if line.to_lowercase().contains(&search_string) {
+            resuls.push(line); 
+        }
+    }
+    resuls
+}
+
+// # Tests
+#[cfg(test)]
+mod tests {
+    use std::vec;
+
+    use super::*;
+
+    #[test]
+    fn case_sensitive() {
+        let searching_word = "duct";
+        let contents = "\
+Rust:
+safe, fast, productive.
+Pick three.
+Duct tape.";
+
+        assert_eq!(vec!["safe, fast, productive."], search(searching_word, contents));
+    }
+
+    #[test]
+    fn case_insensitive() {
+        let searching_word = "rUsT";
+        let contents = "\
+Rust:
+safe, fast, productive.
+Pick three.
+Trust me.";
+
+        assert_eq!(
+            vec!["Rust:", "Trust me."],
+            search_case_insensitive(searching_word, contents)
+        );
+    }
 }
