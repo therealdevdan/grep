@@ -2,9 +2,9 @@ use std::error::Error;
 use std::fs;
 use std::env;
 
-pub struct Config<'a> {
-    pub search_string: &'a str, // заимствует строку. Данные, на которые ссылается Config, должны 
-    pub file_path: &'a str,     // жить не меньше, чем сам Config (это гарантирует время жизни 'a).
+pub struct Config< 'live_args> {
+    pub search_string: & 'live_args str, // заимствует строку. Данные, на которые ссылается Config, должны 
+    pub file_path: & 'live_args str,     // жить не меньше, чем сам Config (это гарантирует время жизни 'a).
     pub ignore_case: bool,
 }
 // # ОСТОРОЖНО!
