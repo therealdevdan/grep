@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fs;
 use std::env;
 
-pub struct Config< 'live_args> {
+pub struct Config<'live_args> {
     pub search_string: & 'live_args str, // заимствует строку. Данные, на которые ссылается Config, должны 
     pub file_path: & 'live_args str,     // жить не меньше, чем сам Config (это гарантирует время жизни 'a).
     pub ignore_case: bool,
@@ -22,8 +22,8 @@ impl BuildingConfig for Config<'_> {
         if args.len() < 3 {
             return Err("Not enough args");
         }
-        
-        let ignore_case = env::var("IGNORE_CASE").is_ok(); // Переменная среды. Определяющая, какой поиск использовать
+
+        let ignore_case: bool = env::var("IGNORE_CASE").is_ok();
 
         Ok(Config { 
             search_string: &args[1], 
@@ -42,25 +42,35 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         search(&config.search_string, &contents)
     };
 
-    for line in results {
-        println!("{line}");
+    let mut iter = IntoIterator::into_iter(results);
+    loop {
+        match iter.next() {
+            Some(line) => println!("{line}"),
+            None => break,
+        }
     }
-
+    
     Ok(())
 }
 
-//==== поиск с учётом регистра
 pub fn search<'a>(search_string: &str, contents: &'a str) -> Vec<&'a str> {
     let mut results: Vec<&str> = Vec::new();
     
-    for line in contents.lines() {
-        if line.contains(search_string) {
-            results.push(line);
+    let mut iter: std::str::Lines<'_> = IntoIterator::into_iter(contents.lines());
+    loop {
+        match iter.next() {
+            Some(line) => {
+                if line.contains(search_string) {
+                    results.push(line);
+                }
+            }
+            None => break,
         }
     }
+
     results
 }
-//==== поиск без учёта регистра
+
 pub fn search_case_insensitive<'a>(
     search_string: &str,
     contents: &'a str,
@@ -68,10 +78,17 @@ pub fn search_case_insensitive<'a>(
     let search_string = search_string.to_lowercase();
     let mut resuls: Vec<&str> = Vec::new();
 
-    for line in contents.lines() {
-        if line.to_lowercase().contains(&search_string) {
-            resuls.push(line); 
+    let mut iter = IntoIterator::into_iter(contents.lines());
+    loop {
+        match iter.next() {
+            Some(line) => {
+                if line.to_lowercase().contains(&search_string) {
+                    resuls.push(line);
+                }
+            }
+            None => break,
         }
     }
+
     resuls
 }
